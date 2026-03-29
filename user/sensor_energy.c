@@ -6,33 +6,34 @@
 int
 main(void)
 {
-    int temp = 20;
-    unsigned int seed = 1;
+    int energy = 70;
+    unsigned int seed = 3;
 
     while(1){
         seed = seed * 1103515245 + 12345;
-        int change = (seed % 3) - 1;   // -1, 0, 1
+        int change = (seed % 7) - 3;   // -3 to +3
 
-        temp += change;
+        energy += change;
 
-        if(temp < 0)
-            temp = 0;
-        if(temp > 40)
-            temp = 40;
+        if(energy < 0)
+            energy = 0;
+        if(energy > 100)
+            energy = 100;
 
-        setsensor(SENSOR_TEMP, temp);
+        setsensor(SENSOR_ENERGY, energy);
 
         int delay = 100000000;
         if(change == 0)
-            delay = 180000000;  
+            delay = 180000000;
         else
-            delay = 80000000;    
+            delay = 80000000;
 
         for(volatile int i = 0; i < delay; i++);
     }
 
     exit(0);
 }
+
 
 
 

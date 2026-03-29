@@ -28,7 +28,8 @@ OBJS = \
   $K/sysfile.o \
   $K/kernelvec.o \
   $K/plic.o \
-  $K/virtio_disk.o
+  $K/virtio_disk.o \
+  $K/ecosense.o \
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -146,6 +147,10 @@ UPROGS=\
 	$U/_forphan\
 	$U/_dorphan\
 	$U/_sensor_temp\
+	$U/_sensor_air\
+	$U/_sensor_energy\
+	$U/_eco_monitor\
+	$U/_eco_start\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

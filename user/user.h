@@ -2,6 +2,11 @@
 
 struct stat;
 
+
+struct ecosense_data;
+int setsensor(int type, int value);
+int getsensors(struct ecosense_data *data);
+
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -47,3 +52,5 @@ void printf(const char*, ...) __attribute__ ((format (printf, 1, 2)));
 // umalloc.c
 void* malloc(uint);
 void free(void*);
+
+

@@ -6,6 +6,29 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "vm.h"
+#include "ecosense.h"
+
+uint64
+sys_setsensor(void)
+{
+  int type, value;
+
+  argint(0, &type);
+  argint(1, &value);
+
+  return ecosense_set(type, value);
+}
+
+uint64
+sys_getsensors(void)
+{
+  uint64 addr;
+
+  argaddr(0, &addr);
+
+  return ecosense_get(addr);
+}
+
 
 uint64
 sys_exit(void)
