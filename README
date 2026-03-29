@@ -64,32 +64,36 @@ The kernel stores the latest values in a shared EcoSense data structure.
 ### Step 5 — Kernel checks thresholds
 The kernel compares values against thresholds and decides whether an alert should be raised.
 
+
+### How to Run the Demo
+
+# Prerequisites
+Before running the project, install:
+- Linux or WSL Ubuntu environment
+- RISC-V xv6 toolchain
+- QEMU
+- Git
+
+# Clone the repository
+git clone https://github.com/NateNico/Mini-Project-ecosense-xv6-.git
+cd Mini-Project-ecosense-xv6-
+
+### Run the Demo
+make clean
+make qemu
+
+eco_start
+
 ### Step 6 — Monitor displays results
 The monitoring program repeatedly reads the latest values from the kernel and prints a dashboard.
 
-## Example Dashboard Output
+## Dashboard Output
 The output looks like a live environmental dashboard. During testing, the system showed normal operation (`NONE`), high energy alerts, and high temperature alerts as values crossed their thresholds. The project behaves as a continuous live monitor, so it keeps running until QEMU is terminated manually.
 
-### Example format
+### What you see
 
 === EcoSense Dashboard ===
 Temperature : 36 C
 Air Quality : 62
 Energy Usage: 79
 Alerts      : HIGH TEMP
-
-### How to Build and Run
-
-make clean
-make qemu
-
-eco_start
-
-### How to Push to GitHub
-
-git remote remove origin
-git remote add origin https://github.com/NateNico/Mini-Project-ecosense-xv6-.git
-git add .
-git commit -m "Update EcoSense xv6 mini project"
-git branch -M main
-git push -u origin main
