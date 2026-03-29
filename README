@@ -1,9 +1,9 @@
 # SE 3313B Mini Project — EcoSense xv6
 
 ## Overview
-EcoSense is a sustainability-focused extension of the xv6 operating system.
+EcoSense is a sustainability focused extension of the xv6 operating system.
 
-The goal of the project is to show how operating system design can support environmental sustainability by managing environmental monitoring tasks efficiently. Instead of treating sustainability as just an application level feature, EcoSense pushes the idea into the operating system layer by using processes, shared kernel data, synchronization, and alert logic.
+The goal of the project is to show how operating system design can support environmental sustainability by managing environmental monitoring tasks efficiently. Instead of treating sustainability as just an application-level feature, EcoSense pushes the idea into the operating system layer by using processes, shared kernel data, synchronization, and alert logic.
 
 In this project, xv6 simulates multiple environmental sensors as separate user processes. These processes continuously generate environmental readings and send them to the kernel. The kernel stores the readings in a shared data structure, protects that structure with synchronization, and allows a monitoring program to display the current system state.
 
@@ -18,16 +18,15 @@ Each sensor runs as its own process and continuously updates the kernel with new
 
 This project connects operating systems concepts to sustainability by showing how OS design decisions can be used to coordinate monitoring tasks, reduce unnecessary work, and react to unsafe environmental conditions.
 
-
 ## Main OS Concepts Used
 This project is meant to demonstrate the following operating systems ideas:
 
-#1 - Each sensor is implemented as a separate user process. This shows concurrency inside xv6.
-#2 - The sensor programs do not directly share values with each other. Instead, they communicate with the kernel using system calls.
-#3 - The kernel keeps the latest values for all sensors in one shared data structure.
-#4 - Because multiple sensor processes may update the shared sensor data at the same time, a spinlock is used to protect the shared structure and prevent race conditions.
-#5 - The kernel checks sensor values against thresholds and raises alerts when values become unsafe.
-#6 - The sensors use adaptive sampling logic so they can reduce unnecessary work when readings are stable. This supports the main sustainability idea of the project: reducing wasted processing activity.
+- Each sensor is implemented as a separate user process. This shows concurrency inside xv6.
+- The sensor programs do not directly share values with each other. Instead, they communicate with the kernel using system calls.
+- The kernel keeps the latest values for all sensors in one shared data structure.
+- Because multiple sensor processes may update the shared sensor data at the same time, a spinlock is used to protect the shared structure and prevent race conditions.
+- The kernel checks sensor values against thresholds and raises alerts when values become unsafe.
+- The sensors use adaptive sampling logic so they can reduce unnecessary work when readings are stable. This supports the main sustainability idea of the project: reducing wasted processing activity.
 
 ## Features
 - Multiple concurrent sensor processes
@@ -38,6 +37,7 @@ This project is meant to demonstrate the following operating systems ideas:
 - Adaptive sampling behavior
 
 ## Current Sensor Types
+
 ### Temperature Sensor
 Simulates temperature values in a realistic range.
 
@@ -47,8 +47,8 @@ Simulates changing air quality values.
 ### Energy Usage Sensor
 Simulates changing energy consumption values.
 
-
 ## How the Project Works
+
 ### Step 1 — Start the system
 A launcher program starts all sensor processes and the monitoring process.
 
@@ -67,11 +67,10 @@ The kernel compares values against thresholds and decides whether an alert shoul
 ### Step 6 — Monitor displays results
 The monitoring program repeatedly reads the latest values from the kernel and prints a dashboard.
 
-
 ## Example Dashboard Output
-The output looks like a live environmental dashboard. During testing, the system showed normal operation (`NONE`), high energy alerts, and high temperature alerts as values crossed their thresholds. The project behaves as a continuous live monitor, so it keeps running until QEMU is terminated manually. 
+The output looks like a live environmental dashboard. During testing, the system showed normal operation (`NONE`), high energy alerts, and high temperature alerts as values crossed their thresholds. The project behaves as a continuous live monitor, so it keeps running until QEMU is terminated manually.
 
-### Example format (This is how it is showen!):
+### Example format
 
 === EcoSense Dashboard ===
 Temperature : 36 C
@@ -79,10 +78,18 @@ Air Quality : 62
 Energy Usage: 79
 Alerts      : HIGH TEMP
 
-After commands: 
+### How to Build and Run
+
 make clean
 make qemu
 
-and, 
-
 eco_start
+
+### How to Push to GitHub
+
+git remote remove origin
+git remote add origin https://github.com/NateNico/Mini-Project-ecosense-xv6-.git
+git add .
+git commit -m "Update EcoSense xv6 mini project"
+git branch -M main
+git push -u origin main
