@@ -29,6 +29,14 @@ sys_getsensors(void)
   return ecosense_get(addr);
 }
 
+// Mark the calling process as eco-friendly.
+// The scheduler will prefer eco-friendly processes while eco mode is active.
+uint64
+sys_setecofriendly(void)
+{
+  myproc()->eco_friendly = 1;
+  return 0;
+}
 
 uint64
 sys_exit(void)

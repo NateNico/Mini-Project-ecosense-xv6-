@@ -44,3 +44,4 @@ entry("pause");
 entry("uptime");
 entry("setsensor");
 entry("getsensors");
+entry("setecofriendly");

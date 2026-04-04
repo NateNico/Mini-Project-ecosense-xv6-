@@ -6,6 +6,8 @@
 int
 main(void)
 {
+    setecofriendly();
+
     int energy = 70;
     unsigned int seed = 3;
 
@@ -22,7 +24,7 @@ main(void)
 
         setsensor(SENSOR_ENERGY, energy);
 
-        int delay = 100000000;
+        int delay;
         if(change == 0)
             delay = 180000000;
         else
@@ -33,9 +35,3 @@ main(void)
 
     exit(0);
 }
-
-
-
-
-
-

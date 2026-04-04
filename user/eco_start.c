@@ -2,44 +2,45 @@
 #include "kernel/stat.h"
 #include "user/user.h"
 
+static int
+spawn(char *prog, char *argv[])
+{
+    int pid = fork();
+    if(pid == 0){
+        exec(prog, argv);
+        printf("eco_start: failed to exec %s\n", prog);
+        exit(1);
+    }
+    return pid;
+}
+
 int
 main(void)
 {
-    char *temp_argv[] = {"sensor_temp", 0};
-    char *air_argv[] = {"sensor_air", 0};
-    char *energy_argv[] = {"sensor_energy", 0};
-    char *monitor_argv[] = {"eco_monitor", 0};
+    int pids[10];
+    int n = 0;
 
-    if(fork() == 0){
-        exec("sensor_temp", temp_argv);
-        printf("failed to start sensor_temp\n");
-        exit(1);
-    }
+    pids[n++] = spawn("sensor_temp",   (char*[]){"sensor_temp",   0});
+    pids[n++] = spawn("sensor_air",    (char*[]){"sensor_air",    0});
+    pids[n++] = spawn("sensor_energy", (char*[]){"sensor_energy", 0});
+    pids[n++] = spawn("eco_monitor",   (char*[]){"eco_monitor",   0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "eco",  0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "eco",  0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "eco",  0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "norm", 0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "norm", 0});
+    pids[n++] = spawn("sim_worker",    (char*[]){"sim_worker", "norm", 0});
 
-    if(fork() == 0){
-        exec("sensor_air", air_argv);
-        printf("failed to start sensor_air\n");
-        exit(1);
-    }
+    printf("--- EcoSense demo running. Press Enter to stop. ---\n");
 
-    if(fork() == 0){
-        exec("sensor_energy", energy_argv);
-        printf("failed to start sensor_energy\n");
-        exit(1);
-    }
+    char buf[1];
+    read(0, buf, 1);
 
-    if(fork() == 0){
-        exec("eco_monitor", monitor_argv);
-        printf("failed to start eco_monitor\n");
-        exit(1);
-    }
+    for(int i = 0; i < n; i++)
+        kill(pids[i]);
+    for(int i = 0; i < n; i++)
+        wait(0);
 
-    wait(0);
-    wait(0);
-    wait(0);
-    wait(0);
-
+    printf("eco_start: all processes stopped.\n");
     exit(0);
 }
-
-

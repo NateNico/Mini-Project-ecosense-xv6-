@@ -6,6 +6,10 @@
 int
 main(void)
 {
+    // Sensor processes are the eco-critical workload — mark them eco-friendly
+    // so they get scheduling priority when eco mode fires.
+    setecofriendly();
+
     int temp = 20;
     unsigned int seed = 1;
 
@@ -22,19 +26,14 @@ main(void)
 
         setsensor(SENSOR_TEMP, temp);
 
-        int delay = 100000000;
+        int delay;
         if(change == 0)
-            delay = 180000000;  
+            delay = 180000000;
         else
-            delay = 80000000;    
+            delay = 80000000;
 
         for(volatile int i = 0; i < delay; i++);
     }
 
     exit(0);
 }
-
-
-
-
-

@@ -151,6 +151,7 @@ UPROGS=\
 	$U/_sensor_energy\
 	$U/_eco_monitor\
 	$U/_eco_start\
+	$U/_sim_worker\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
