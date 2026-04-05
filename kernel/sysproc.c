@@ -154,6 +154,15 @@ sys_pause(void)
 }
 
 uint64
+sys_setcriticalthreshold(void)
+{
+  int percent;
+  argint(0, &percent);
+  return battery_set_critical_threshold(percent);
+}
+
+
+uint64
 sys_kill(void)
 {
   int pid;

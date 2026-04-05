@@ -14,6 +14,8 @@ status_name(int charging)
 static char *
 mode_name(int mode)
 {
+  if(mode == POWER_CRITICAL)
+    return "!! CRITICAL !!";
   if(mode == POWER_SAVER)
     return "POWER SAVER";
   return "PERFORMANCE";
@@ -69,6 +71,11 @@ main(void)
     printf("(ACTIVE: System is in SAVER mode)\n");
   else
     printf("(OK: System can remain in PERFORMANCE mode)\n");
+  printf("Crit Threshold: %d%% ", status.critical_threshold);
+  if(status.power_state == POWER_CRITICAL)
+    printf("(ACTIVE: only interactive processes running)\n");
+  else
+    printf("(OK)\n");
   if(status.estimated_ticks_left < 0)
     printf("Estimated Time Remaining: charging\n");
   else
