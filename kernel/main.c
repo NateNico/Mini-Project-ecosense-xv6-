@@ -29,7 +29,7 @@ main()
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk
 
-    ecosenseinit();    // initialize EcoSense shared kernel data
+    batteryinit();   // initialize BatteryOS shared kernel data
     
     userinit();      // first user process
     __sync_synchronize();

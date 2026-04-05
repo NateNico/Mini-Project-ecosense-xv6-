@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "battery.h"
 
 struct cpu cpus[NCPU];
 
@@ -124,6 +125,11 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->power_class = POWER_CLASS_NORMAL;
+  p->schedule_count = 0;
+  p->cpu_ticks = 0;
+  p->throttle_count = 0;
+  p->energy_score = 0;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -155,6 +161,7 @@ found:
 static void
 freeproc(struct proc *p)
 {
+  battery_record_exit(p);
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
@@ -168,7 +175,11 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
-  p->eco_friendly = 0;
+  p->power_class = POWER_CLASS_NORMAL;
+  p->schedule_count = 0;
+  p->cpu_ticks = 0;
+  p->throttle_count = 0;
+  p->energy_score = 0;
   p->state = UNUSED;
 }
 
@@ -290,6 +301,11 @@ kfork(void)
   np->cwd = idup(p->cwd);
 
   safestrcpy(np->name, p->name, sizeof(p->name));
+  np->power_class = p->power_class;
+  np->schedule_count = 0;
+  np->cpu_ticks = 0;
+  np->throttle_count = 0;
+  np->energy_score = 0;
 
   pid = np->pid;
 
@@ -430,59 +446,55 @@ scheduler(void)
 
   c->proc = 0;
 
-  // eco_skip_counter tracks how many consecutive rounds NORM has been
-  // skipped. Once it hits ECO_NORM_RATIO, NORM gets one round.
-  // ECO_NORM_RATIO = 3 means ECO gets ~75% CPU, NORM gets ~25%.
-  int eco_skip_counter = 0;
-  #define ECO_NORM_RATIO 3
-
   for(;;){
     intr_on();
-    intr_off();
 
-    int eco_active  = ecosense_eco_mode_active();
-    int eco_waiting = 0;
+    int saver = battery_is_saver();
+    int found_foreground = 0;
+    int found = 0;
 
-    if(eco_active){
+    if(saver){
       for(p = proc; p < &proc[NPROC]; p++){
         acquire(&p->lock);
-        if(p->state == RUNNABLE && p->eco_friendly)
-          eco_waiting = 1;
+        if(p->state == RUNNABLE && p->power_class != POWER_CLASS_BACKGROUND)
+          found_foreground = 1;
         release(&p->lock);
-        if(eco_waiting)
+        if(found_foreground)
           break;
       }
     }
 
-    // Skip NORM for ECO_NORM_RATIO rounds, then let NORM have one round.
-    int skip_norm = eco_active && eco_waiting &&
-                    (eco_skip_counter < ECO_NORM_RATIO);
+    for(int pass = 0; pass < 2 && found == 0; pass++){
+      int allow_background = !saver || !found_foreground || pass == 1;
 
-    if(skip_norm){
-      eco_skip_counter++;
-    } else {
-      eco_skip_counter = 0;
-    }
-
-    int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        if(skip_norm && !p->eco_friendly){
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state != RUNNABLE){
           release(&p->lock);
           continue;
         }
+        if(!allow_background && p->power_class == POWER_CLASS_BACKGROUND){
+          release(&p->lock);
+          continue;
+        }
+        if(saver && battery_should_skip(p)){
+          p->throttle_count++;
+          release(&p->lock);
+          continue;
+        }
+
         p->state = RUNNING;
         c->proc = p;
+        battery_on_schedule(p);
         swtch(&c->context, &p->context);
         c->proc = 0;
+        release(&p->lock);
         found = 1;
+        break;
       }
-      release(&p->lock);
     }
-    if(found == 0) {
-      asm volatile("wfi");
-    }
+    if(found == 0)
+      battery_scheduler_pause();
   }
 }
 

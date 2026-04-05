@@ -1,0 +1,65 @@
+#include "kernel/types.h"
+#include "kernel/stat.h"
+#include "kernel/battery.h"
+#include "user/user.h"
+
+static int
+streq(char *a, char *b)
+{
+  return strcmp(a, b) == 0;
+}
+
+static void
+usage(void)
+{
+  printf("usage: powerctl status\n");
+  printf("       powerctl threshold <5-95>\n");
+  printf("       powerctl level <0-100>\n");
+  printf("       powerctl charge <0|1>\n");
+  printf("       powerctl class <interactive|normal|background>\n");
+}
+
+int
+main(int argc, char *argv[])
+{
+  struct battery_status status;
+
+  if(argc < 2){
+    usage();
+    exit(1);
+  }
+
+  if(streq(argv[1], "status")){
+    if(getpowerstatus(&status) < 0){
+      printf("powerctl: getpowerstatus failed\n");
+      exit(1);
+    }
+    printf("battery=%d mode=%d threshold=%d charging=%d drain=%d load=%d\n",
+           status.battery_level, status.power_state, status.threshold,
+           status.charging, status.drain_rate, status.runnable_procs);
+    exit(0);
+  }
+
+  if(argc < 3){
+    usage();
+    exit(1);
+  }
+
+  if(streq(argv[1], "threshold"))
+    exit(setpowerthreshold(atoi(argv[2])) < 0);
+  if(streq(argv[1], "level"))
+    exit(setbatterylevel(atoi(argv[2])) < 0);
+  if(streq(argv[1], "charge"))
+    exit(setcharging(atoi(argv[2])) < 0);
+  if(streq(argv[1], "class")){
+    if(streq(argv[2], "interactive"))
+      exit(setpowerclass(POWER_CLASS_INTERACTIVE) < 0);
+    if(streq(argv[2], "normal"))
+      exit(setpowerclass(POWER_CLASS_NORMAL) < 0);
+    if(streq(argv[2], "background"))
+      exit(setpowerclass(POWER_CLASS_BACKGROUND) < 0);
+  }
+
+  usage();
+  exit(1);
+}

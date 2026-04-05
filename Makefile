@@ -29,7 +29,7 @@ OBJS = \
   $K/kernelvec.o \
   $K/plic.o \
   $K/virtio_disk.o \
-  $K/ecosense.o \
+	$K/battery.o \
 
 # riscv64-unknown-elf- or riscv64-linux-gnu-
 # perhaps in /opt/riscv/bin
@@ -146,12 +146,15 @@ UPROGS=\
 	$U/_logstress\
 	$U/_forphan\
 	$U/_dorphan\
-	$U/_sensor_temp\
-	$U/_sensor_air\
-	$U/_sensor_energy\
-	$U/_eco_monitor\
-	$U/_eco_start\
-	$U/_sim_worker\
+	$U/_battery\
+	$U/_battery_worker\
+	$U/_charge\
+	$U/_ecotop\
+	$U/_heavy_task\
+	$U/_light_task\
+	$U/_medium_task\
+	$U/_unplug\
+	$U/_powerctl\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

@@ -6,36 +6,72 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "vm.h"
-#include "ecosense.h"
+#include "battery.h"
 
 uint64
-sys_setsensor(void)
+sys_setpowerthreshold(void)
 {
-  int type, value;
+  int percent;
 
-  argint(0, &type);
-  argint(1, &value);
+  argint(0, &percent);
 
-  return ecosense_set(type, value);
+  return battery_set_threshold(percent);
 }
 
 uint64
-sys_getsensors(void)
+sys_getpowerstatus(void)
 {
   uint64 addr;
 
   argaddr(0, &addr);
 
-  return ecosense_get(addr);
+  return battery_get_status(addr);
 }
 
-// Mark the calling process as eco-friendly.
-// The scheduler will prefer eco-friendly processes while eco mode is active.
 uint64
-sys_setecofriendly(void)
+sys_setcharging(void)
 {
-  myproc()->eco_friendly = 1;
+  int on;
+
+  argint(0, &on);
+  return battery_set_charging(on);
+}
+
+uint64
+sys_setbatterylevel(void)
+{
+  int percent;
+
+  argint(0, &percent);
+  return battery_set_level(percent);
+}
+
+uint64
+sys_setpowerclass(void)
+{
+  int class_id;
+  struct proc *p;
+
+  argint(0, &class_id);
+  if(class_id < POWER_CLASS_INTERACTIVE || class_id > POWER_CLASS_BACKGROUND)
+    return -1;
+
+  p = myproc();
+  acquire(&p->lock);
+  p->power_class = class_id;
+  release(&p->lock);
   return 0;
+}
+
+uint64
+sys_getbatteryprocs(void)
+{
+  uint64 addr;
+  int max;
+
+  argaddr(0, &addr);
+  argint(1, &max);
+  return battery_get_procs(addr, max);
 }
 
 uint64

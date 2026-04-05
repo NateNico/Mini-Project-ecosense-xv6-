@@ -1,99 +1,256 @@
-# SE 3313B Mini Project — EcoSense xv6
+# SE 3313B Mini Project - BatteryOS xv6
 
 ## Overview
-EcoSense is a sustainability focused extension of the xv6 operating system.
+BatteryOS is a battery-adaptive extension of xv6 that treats power as an operating-system resource.
 
-The goal of the project is to show how operating system design can support environmental sustainability by managing environmental monitoring tasks efficiently. Instead of treating sustainability as just an application-level feature, EcoSense pushes the idea into the operating system layer by using processes, shared kernel data, synchronization, and alert logic.
+Instead of simulating environmental sensors, this project changes xv6 itself so the kernel reacts to low remaining energy. The system maintains a virtual battery, switches between performance and power-saver modes, throttles energy-hungry background work, and exposes battery and process-energy information to user space.
 
-In this project, xv6 simulates multiple environmental sensors as separate user processes. These processes continuously generate environmental readings and send them to the kernel. The kernel stores the readings in a shared data structure, protects that structure with synchronization, and allows a monitoring program to display the current system state.
+The sustainability argument is direct: an OS that stretches battery life reduces charge frequency, lowers battery cycle wear, and extends hardware lifespan. That helps reduce unnecessary energy consumption and long-term electronic waste.
 
 ## Project Idea
-EcoSense models a simple environmental monitoring system inside xv6. It simulates three sensors:
+BatteryOS interprets sustainability as a problem in OS design.
 
-- Temperature sensor
-- Air quality sensor
-- Energy usage sensor
+The kernel continuously estimates battery drain based on current runnable load. When the battery falls below a user-defined threshold, the system automatically enters power-saver mode. In that mode, the scheduler favors non-background work and aggressively throttles energy-heavy background processes.
 
-Each sensor runs as its own process and continuously updates the kernel with new values. A monitoring program reads the current values from the kernel and prints a live dashboard.
+When charging is enabled or the battery level is restored, the kernel returns to performance mode and background work runs more freely again.
 
-This project connects operating systems concepts to sustainability by showing how OS design decisions can be used to coordinate monitoring tasks, reduce unnecessary work, and react to unsafe environmental conditions.
+## New xv6 Features
+This project adds at least four clear xv6 features that are not present in stock xv6.
+
+### 1. Virtual Battery Subsystem
+- The kernel maintains a virtual battery level from 0 to 100.
+- Battery drain depends on runnable system load.
+- Charging can be simulated from user space.
+
+### 2. Threshold-Based Mode Switching
+- A new system call lets user space set the low-battery threshold.
+- The kernel automatically switches between `PERFORMANCE` and `POWER_SAVER` modes.
+- The battery status interface shows current mode, threshold, drain rate, and estimated time to battery depletion.
+
+### 3. Battery-Adaptive Scheduler
+- In `PERFORMANCE` mode, scheduling stays close to normal xv6 behavior.
+- In `POWER_SAVER` mode, background work is deprioritized.
+- The scheduler preferentially runs non-background tasks when possible.
+
+### 4. Energy-Hog Throttling
+- Each process tracks CPU ticks, scheduling count, throttle count, and energy score.
+- When the battery is low, background processes that exceed the current hog cap are skipped repeatedly.
+- This preserves system longevity over raw throughput.
+
+### 5. User-Space Power Tools
+- `battery` prints a BatteryOS monitor with a charge bar and mode summary.
+- `ecotop` shows the most energy-expensive processes and flags energy hogs.
+- `powerctl` changes threshold, charge state, battery level, and process class.
+- `charge` starts charging from the current level, or sets an exact level and leaves the system unplugged.
+- `unplug` turns charging back off.
+- `light_task`, `medium_task`, and `heavy_task` demonstrate the performance-versus-efficiency tradeoff.
 
 ## Main OS Concepts Used
-This project is meant to demonstrate the following operating systems ideas:
+- New kernel subsystem for shared battery state
+- Timer-interrupt based system accounting
+- Scheduler policy changes in `proc.c`
+- Per-process kernel accounting fields in the process table
+- New system calls and user-space command integration
+- Policy-driven throttling of background workloads
 
-- Each sensor is implemented as a separate user process. This shows concurrency inside xv6.
-- The sensor programs do not directly share values with each other. Instead, they communicate with the kernel using system calls.
-- The kernel keeps the latest values for all sensors in one shared data structure.
-- Because multiple sensor processes may update the shared sensor data at the same time, a spinlock is used to protect the shared structure and prevent race conditions.
-- The kernel checks sensor values against thresholds and raises alerts when values become unsafe.
-- The sensors use adaptive sampling logic so they can reduce unnecessary work when readings are stable. This supports the main sustainability idea of the project: reducing wasted processing activity.
+## Kernel Interfaces
+BatteryOS adds the following syscall-facing controls:
 
-## Features
-- Multiple concurrent sensor processes
-- Shared kernel sensor table
-- Spinlock-based synchronization
-- Alert system for unsafe values
-- Live monitoring dashboard
-- Adaptive sampling behavior
+- `setpowerthreshold(int percent)`
+- `getpowerstatus(struct battery_status *status)`
+- `setcharging(int on)`
+- `setbatterylevel(int percent)`
+- `setpowerclass(int class_id)`
+- `getbatteryprocs(struct battery_procinfo *buf, int max)`
 
-## Current Sensor Types
+## User Commands
+### `battery`
+Displays a BatteryOS-style energy monitor with charge bar, charging status, mode, threshold state, estimated time remaining, and an overcharging warning.
 
-### Temperature Sensor
-Simulates temperature values in a realistic range.
+### `ecotop`
+Displays the processes with the highest BatteryOS energy score and flags likely energy hogs.
 
-### Air Quality Sensor
-Simulates changing air quality values.
+### `heavy_task`
+Runs a measurable background-heavy workload and prints total runtime and battery used.
 
-### Energy Usage Sensor
-Simulates changing energy consumption values.
+### `medium_task`
+Runs a medium background workload and prints total runtime and battery used.
+
+### `light_task`
+Runs a light background workload and prints total runtime and battery used.
+
+### `powerctl`
+Administrative control tool.
+
+Examples:
+- `powerctl status`
+- `powerctl threshold 35`
+- `powerctl level 20`
+- `powerctl class background`
+
+### `charge`
+Quick charging helper.
+
+Examples:
+- `charge 100`
+- `charge`
+
+### `unplug`
+Stops charging.
+
+### `battery_worker`
+Synthetic workload generator with three classes:
+- `interactive`
+- `normal`
+- `background`
 
 ## How the Project Works
+### Step 1
+The timer interrupt updates the global virtual battery and computes drain from system load.
 
-### Step 1 — Start the system
-A launcher program starts all sensor processes and the monitoring process.
+### Step 2
+If the battery level falls below the configured threshold, the kernel enters `POWER_SAVER` mode.
 
-### Step 2 — Sensors generate readings
-Each sensor continuously generates simulated values.
+### Step 3
+In saver mode, the scheduler favors interactive and normal work over background tasks.
 
-### Step 3 — Sensors update the kernel
-The sensor processes send their latest readings to the kernel using custom system calls.
+### Step 4
+Background tasks that become energy hogs are throttled by repeated scheduler skips.
 
-### Step 4 — Kernel stores shared state
-The kernel stores the latest values in a shared EcoSense data structure.
+### Step 5
+User-space tools read battery and process energy data through system calls.
 
-### Step 5 — Kernel checks thresholds
-The kernel compares values against thresholds and decides whether an alert should be raised.
+### Step 6
+If charging is enabled or the battery level is restored, the system returns to `PERFORMANCE` mode.
 
-
-### How to Run the Demo
-
-# Prerequisites
-Before running the project, install:
-- Linux or WSL Ubuntu environment
+## How To Run
+### Prerequisites
+- Linux or WSL Ubuntu
 - RISC-V xv6 toolchain
 - QEMU
 - Git
 
-# Clone the repository
-git clone https://github.com/NateNico/Mini-Project-ecosense-xv6-.git
-cd Mini-Project-ecosense-xv6-
-
-### Run the Demo
+### Build and Boot
+```sh
 make clean
 make qemu
+```
 
-eco_start
+### Manual Inspection Commands
+Inside xv6:
+```sh
+battery
+ecotop
+powerctl status
+powerctl threshold 35
+powerctl level 20
+charge
+charge 100
+unplug
+light_task
+medium_task
+heavy_task
+```
 
-### Step 6 — Monitor displays results
-The monitoring program repeatedly reads the latest values from the kernel and prints a dashboard.
+## Example Output
+Typical output includes lines like:
 
-## Dashboard Output
-The output looks like a live environmental dashboard. During testing, the system showed normal operation (`NONE`), high energy alerts, and high temperature alerts as values crossed their thresholds. The project behaves as a continuous live monitor, so it keeps running until QEMU is terminated manually.
+```text
+[KERNEL]: Battery dropped to 18%.
+[KERNEL]: Threshold reached. Switching to POWER SAVER MODE.
+[KERNEL]: Scheduler nap active; background throttling increased.
+--- BatteryOS Energy Monitor ---
+Current Charge: 18% [##________]
+Status: DISCHARGING
+Current Mode: POWER SAVER
 
-### What you see
+PID   NAME             STATE     CYCLES_USED  EFFICIENCY_SCORE
+6     battery_worker   RUNNABLE  62           67 (ENERGY HOG)
 
-=== EcoSense Dashboard ===
-Temperature : 36 C
-Air Quality : 62
-Energy Usage: 79
-Alerts      : HIGH TEMP
+Task complete in 30 ticks.
+Battery used: 2%
+
+[KERNEL]: Battery restored to 100%.
+[KERNEL]: Switching to PERFORMANCE MODE.
+```
+
+## Unit Test Descriptions
+This project uses reproducible behavior tests rather than a formal xv6 unit-test harness.
+
+### Test 1: Threshold Trigger
+Goal:
+Verify that the kernel switches to `POWER_SAVER` when battery level drops below the configured threshold.
+
+Procedure:
+- set threshold with `powerctl threshold 35`
+- set battery level below threshold with `powerctl level 20`
+- run `battery`
+
+Expected result:
+- BatteryOS reports saver mode and prints the low-battery transition alert.
+
+### Test 2: Recovery To Performance
+Goal:
+Verify that charging or restoring battery level returns the system to `PERFORMANCE` mode.
+
+Procedure:
+- run `charge 100`
+- run `unplug`
+- run `battery`
+
+Expected result:
+- BatteryOS reports charging state and performance mode.
+
+### Test 3: Background Throttling
+Goal:
+Verify that saver mode visibly penalizes background work.
+
+Procedure:
+- run several `battery_worker` processes
+- run `ecotop`
+
+Expected result:
+- Background workers appear near the top of the energy list and are flagged as energy hogs.
+
+### Test 4: Heavy Task Comparison
+Goal:
+Verify that an energy-heavy workload produces measurable runtime and battery usage.
+
+Procedure:
+- lower battery with `powerctl level 18`
+- run `heavy_task`
+
+Expected result:
+- The task prints elapsed ticks and non-zero battery consumption.
+
+### Test 5: Load-Sensitive Drain
+Goal:
+Verify that heavier runnable load increases battery drain.
+
+Procedure:
+- check `battery` at low load
+- start multiple workers
+- check `battery` again
+
+Expected result:
+- Estimated remaining time drops faster under heavier runnable load.
+
+## File Guide
+Main implementation files:
+- `kernel/battery.c`
+- `kernel/battery.h`
+- `kernel/proc.c`
+- `kernel/trap.c`
+- `kernel/sysproc.c`
+- `kernel/syscall.c`
+- `kernel/syscall.h`
+- `user/battery.c`
+- `user/ecotop.c`
+- `user/charge.c`
+- `user/heavy_task.c`
+- `user/unplug.c`
+- `user/powerctl.c`
+- `user/battery_worker.c`
+
+## Statement of Contribution
+Add the signed team contribution statement on the final page of the submitted project documentation.

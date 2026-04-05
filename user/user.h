@@ -1,11 +1,15 @@
 #define SBRK_ERROR ((char *)-1)
 
 struct stat;
+struct battery_status;
+struct battery_procinfo;
 
-struct ecosense_data;
-int setsensor(int type, int value);
-int getsensors(struct ecosense_data *data);
-int setecofriendly(void);
+int setpowerthreshold(int percent);
+int getpowerstatus(struct battery_status *status);
+int setcharging(int on);
+int setbatterylevel(int percent);
+int setpowerclass(int class_id);
+int getbatteryprocs(struct battery_procinfo *buf, int max);
 
 // system calls
 int fork(void);

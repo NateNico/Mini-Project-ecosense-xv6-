@@ -181,11 +181,20 @@ void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
-// ecosense.c
-void            ecosenseinit(void);
-int             ecosense_set(int type, int value);
-int             ecosense_get(uint64 addr);
-int             ecosense_eco_mode_active(void);  // used by scheduler
+// battery.c
+void            batteryinit(void);
+void            battery_tick(void);
+void            battery_on_schedule(struct proc *);
+void            battery_proc_tick(struct proc *);
+int             battery_is_saver(void);
+int             battery_should_skip(struct proc *);
+void            battery_scheduler_pause(void);
+int             battery_set_threshold(int);
+int             battery_set_level(int);
+int             battery_set_charging(int);
+void            battery_record_exit(struct proc *);
+int             battery_get_status(uint64);
+int             battery_get_procs(uint64, int);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
