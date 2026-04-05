@@ -28,14 +28,25 @@ main(void)
   int elapsed;
   int start_ticks;
 
-  if(setpowerclass(POWER_CLASS_BACKGROUND) < 0){
-    printf("medium_task: setpowerclass failed\n");
-    exit(1);
-  }
+
+  
   if(getpowerstatus(&before) < 0){
     printf("medium_task: getpowerstatus failed\n");
     exit(1);
   }
+
+  if(before.power_state == POWER_CRITICAL){
+    printf("medium_task: task deferred: battery critical, charge first.\n");
+    exit(0);
+  }
+
+
+  
+  if(setpowerclass(POWER_CLASS_BACKGROUND) < 0){
+    printf("medium_task: setpowerclass failed\n");
+    exit(1);
+  }
+  
 
   start_ticks = uptime();
   run_chunks(90, 9000000);
@@ -45,6 +56,8 @@ main(void)
     printf("medium_task: getpowerstatus failed\n");
     exit(1);
   }
+
+   
 
   used = before.battery_level - after.battery_level;
   if(used < 0)
