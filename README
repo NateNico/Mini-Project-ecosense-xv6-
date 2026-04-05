@@ -30,6 +30,7 @@ This project adds at least four clear xv6 features that are not present in stock
 ### 3. Battery-Adaptive Scheduler
 - In `PERFORMANCE` mode, scheduling stays close to normal xv6 behavior.
 - In `POWER_SAVER` mode, background work is deprioritized.
+- In 'CRITICAL_MODE' mode, bakground and normal processes are suspended. This happens when battery is extremely low.
 - The scheduler preferentially runs non-background tasks when possible.
 
 ### 4. Energy-Hog Throttling
@@ -87,6 +88,7 @@ Examples:
 - `powerctl threshold 35`
 - `powerctl level 20`
 - `powerctl class background`
+- `powerctl criticalthreshold 5`
 
 ### `charge`
 Quick charging helper.
