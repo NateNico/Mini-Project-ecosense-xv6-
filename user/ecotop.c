@@ -104,10 +104,12 @@ print_num_col(int value, int width)
   print_col(buf, width);
 }
 
+static struct battery_procinfo rows[NPROC];
+
 int
 main(void)
 {
-  struct battery_procinfo rows[NPROC];
+  //struct battery_procinfo rows[NPROC];
   struct battery_status status;
   int count;
 
@@ -118,9 +120,11 @@ main(void)
   }
 
   sort_energy(rows, count);
+  
 
-  printf("PID   NAME             STATE      CYCLES   EFFICIENCY\n");
-  printf("------------------------------------------------------\n");
+  // printf("PID   NAME   STATE      CYCLES   EFFICIENCY\n");
+  // printf("------------------------------------------------------\n");
+  /*
   for(int i = 0; i < count && i < 8; i++){
     int cycles_used = rows[i].cpu_ticks * 1000;
     int score = efficiency_score(&rows[i]);
@@ -132,6 +136,25 @@ main(void)
     print_col(rows[i].name, 17);
     print_col(display_state(&rows[i]), 11);
     print_num_col(cycles_used, 9);
+    printf("%d%% %s\n", score, label);
+  }
+  */
+
+  printf("PID   NAME              STATE       THROTTLED   SKIPS   ENERGY   EFFICIENCY\n");
+  printf("----------------------------------------------------------------------------\n");
+  
+  for(int i = 0; i < count && i < 8; i++){
+    int score = efficiency_score(&rows[i]);
+    char *label = rows[i].throttle_count > 0 || score < 40 ? "ENERGY HOG" : "Clean";
+    if(rows[i].power_class == POWER_CLASS_INTERACTIVE && score > 80)
+      label = "Efficient";
+
+    print_num_col(rows[i].pid, 5);
+    print_col(rows[i].name, 18);
+    print_col(display_state(&rows[i]), 12);
+    print_num_col(rows[i].throttle_count, 12);
+    print_num_col(rows[i].total_skips, 8);
+    print_num_col(rows[i].energy_score, 8);
     printf("%d%% %s\n", score, label);
   }
 

@@ -31,6 +31,39 @@ struct {
   struct battery_procinfo recent[BATTERY_RECENT_PROC_COUNT];
 } battery_state;
 
+
+static int
+battery_schedule_cost(struct proc *p, int saver)
+{
+  if(p->power_class == POWER_CLASS_INTERACTIVE)
+    return 0;
+  if(p->power_class == POWER_CLASS_NORMAL)
+    return 1;
+  return saver ? 1 : 2;
+}
+
+static int
+battery_runtime_cost(struct proc *p, int saver)
+{
+  if(p->power_class == POWER_CLASS_INTERACTIVE)
+    return 1;
+  if(p->power_class == POWER_CLASS_NORMAL)
+    return saver ? 1 : 2;
+  return saver ? 2 : 3;
+}
+
+static void
+battery_refresh_power_class(struct proc *p)
+{
+  if(p->cpu_ticks >= 80 || p->energy_score >= 140 || p->throttle_count >= 10)
+    p->power_class = POWER_CLASS_BACKGROUND;
+  else if(p->cpu_ticks >= 25 || p->energy_score >= 45 || p->schedule_count >= 12)
+    p->power_class = POWER_CLASS_NORMAL;
+  else
+    p->power_class = POWER_CLASS_INTERACTIVE;
+}
+
+
 static int
 clamp_percent(int value)
 {
@@ -153,6 +186,8 @@ battery_record_exit(struct proc *p)
   slot->cpu_ticks = p->cpu_ticks;
   slot->throttle_count = p->throttle_count;
   slot->energy_score = p->energy_score;
+  slot->consecutive_skips = p->consecutive_skips;
+  slot->total_skips = p->total_skips;
   safestrcpy(slot->name, p->name, sizeof(slot->name));
 
   battery_state.recent_index = (battery_state.recent_index + 1) % BATTERY_RECENT_PROC_COUNT;
@@ -223,6 +258,32 @@ battery_tick(void)
   }
 }
 
+
+void
+battery_on_skip(struct proc *p)
+{
+  p->throttle_count++;
+  p->consecutive_skips++;
+  p->total_skips++;
+  battery_refresh_power_class(p);
+}
+
+void
+battery_on_schedule(struct proc *p)
+{
+  int saver;
+
+  acquire(&battery_state.lock);
+  saver = (battery_state.power_state == POWER_SAVER);
+  release(&battery_state.lock);
+
+  p->schedule_count++;
+  p->consecutive_skips = 0;
+  p->energy_score += battery_schedule_cost(p, saver);
+  battery_refresh_power_class(p);
+}
+
+/*
 void
 battery_on_schedule(struct proc *p)
 {
@@ -238,7 +299,23 @@ battery_on_schedule(struct proc *p)
   else if(p->power_class == POWER_CLASS_NORMAL)
     p->energy_score += 1;
 }
+*/
 
+void
+battery_proc_tick(struct proc *p)
+{
+  int saver;
+
+  acquire(&battery_state.lock);
+  saver = (battery_state.power_state == POWER_SAVER);
+  release(&battery_state.lock);
+
+  p->cpu_ticks++;
+  p->energy_score += battery_runtime_cost(p, saver);
+  battery_refresh_power_class(p);
+}
+
+/*
 void
 battery_proc_tick(struct proc *p)
 {
@@ -251,6 +328,7 @@ battery_proc_tick(struct proc *p)
   p->cpu_ticks++;
   p->energy_score += saver ? 1 : 2;
 }
+*/
 
 int
 battery_is_saver(void)
@@ -289,6 +367,34 @@ battery_should_skip(struct proc *p)
 
   return 0;
 }
+
+/*
+int
+battery_should_skip(struct proc *p)
+{
+  int hog_cap;
+  int saver;
+
+  acquire(&battery_state.lock);
+  saver = (battery_state.power_state == POWER_SAVER);
+  hog_cap = current_hog_cap_locked();
+  release(&battery_state.lock);
+
+  if(!saver)
+    return 0;
+  if(p->power_class == POWER_CLASS_INTERACTIVE)
+    return 0;
+
+  if(p->power_class == POWER_CLASS_BACKGROUND){
+    if(p->cpu_ticks > hog_cap && ((ticks + p->pid) % 3) != 0)
+      return 1;
+  } else if(p->cpu_ticks > hog_cap * 2 && ((ticks + p->pid) % 2) != 0){
+    return 1;
+  }
+
+  return 0;
+}
+*/
 
 void
 battery_scheduler_pause(void)
@@ -407,6 +513,8 @@ battery_get_procs(uint64 addr, int max)
       snapshots[count].cpu_ticks = p->cpu_ticks;
       snapshots[count].throttle_count = p->throttle_count;
       snapshots[count].energy_score = p->energy_score;
+      snapshots[count].consecutive_skips = p->consecutive_skips;
+      snapshots[count].total_skips = p->total_skips;
       safestrcpy(snapshots[count].name, p->name, sizeof(snapshots[count].name));
       count++;
     }

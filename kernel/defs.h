@@ -184,6 +184,7 @@ void            virtio_disk_intr(void);
 // battery.c
 void            batteryinit(void);
 void            battery_tick(void);
+void            battery_on_skip(struct proc *p);
 void            battery_on_schedule(struct proc *);
 void            battery_proc_tick(struct proc *);
 int             battery_is_saver(void);
