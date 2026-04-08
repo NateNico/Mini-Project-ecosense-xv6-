@@ -180,6 +180,7 @@ freeproc(struct proc *p)
   p->cpu_ticks = 0;
   p->throttle_count = 0;
   p->energy_score = 0;
+  p->consecutive_skips = 0;
   p->state = UNUSED;
 }
 
@@ -431,6 +432,74 @@ kwait(uint64 addr)
   }
 }
 
+
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct cpu *c = mycpu();
+
+  c->proc = 0;
+
+  for(;;){
+    intr_on();
+
+    int saver = battery_is_saver();
+    int found_foreground = 0;
+    int found = 0;
+    int skipped_runnable = 0;
+
+    if(saver){
+      for(p = proc; p < &proc[NPROC]; p++){
+        acquire(&p->lock);
+        if(p->state == RUNNABLE && p->power_class != POWER_CLASS_BACKGROUND)
+          found_foreground = 1;
+        release(&p->lock);
+        if(found_foreground)
+          break;
+      }
+    }
+
+    for(int pass = 0; pass < 2 && found == 0; pass++){
+      int allow_background = !saver || !found_foreground || pass == 1;
+
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+
+        if(p->state != RUNNABLE){
+          release(&p->lock);
+          continue;
+        }
+
+        if(!allow_background && p->power_class == POWER_CLASS_BACKGROUND){
+          release(&p->lock);
+          continue;
+        }
+
+        if(saver && battery_should_skip(p)){
+          battery_on_skip(p);
+          skipped_runnable = 1;
+          release(&p->lock);
+          continue;
+        }
+
+        p->state = RUNNING;
+        c->proc = p;
+        battery_on_schedule(p);
+        swtch(&c->context, &p->context);
+        c->proc = 0;
+        release(&p->lock);
+        found = 1;
+        break;
+      }
+    }
+
+    if(saver && found == 0 && skipped_runnable)
+      battery_scheduler_pause();
+  }
+}
+
+/*
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
 // Scheduler never returns.  It loops, doing:
@@ -497,6 +566,7 @@ scheduler(void)
       battery_scheduler_pause();
   }
 }
+*/
 
 // Switch to scheduler.  Must hold only p->lock
 // and have changed proc->state. Saves and restores

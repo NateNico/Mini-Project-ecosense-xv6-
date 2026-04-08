@@ -109,6 +109,8 @@ struct proc {
   int cpu_ticks;
   int throttle_count;
   int energy_score;
+  int consecutive_skips;
+  int total_skips;
 };
 
 extern struct proc proc[NPROC];
