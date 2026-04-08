@@ -1,6 +1,7 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "kernel/battery.h"
+#include "kernel/fcntl.h"
 #include "user/user.h"
 
 static int
@@ -45,8 +46,17 @@ main(int argc, char *argv[])
     exit(1);
   }
 
-  if(streq(argv[1], "threshold"))
-    exit(setpowerthreshold(atoi(argv[2])) < 0);
+  if(streq(argv[1], "threshold")){
+    int val = atoi(argv[2]);
+    if(setpowerthreshold(val) < 0)
+      exit(1);
+    int fd = open("/battery.conf", O_CREATE | O_WRONLY);
+    if(fd >= 0){
+      write(fd, &val, sizeof(val));
+      close(fd);
+    }
+    exit(0);
+  }
   if(streq(argv[1], "level"))
     exit(setbatterylevel(atoi(argv[2])) < 0);
   if(streq(argv[1], "charge"))

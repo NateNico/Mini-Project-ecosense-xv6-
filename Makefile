@@ -155,6 +155,7 @@ UPROGS=\
 	$U/_medium_task\
 	$U/_unplug\
 	$U/_powerctl\
+	$U/_waitpower\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

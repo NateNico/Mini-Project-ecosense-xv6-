@@ -623,6 +623,7 @@ forkret(void)
     // regular process (e.g., because it calls sleep), and thus cannot
     // be run from main().
     fsinit(ROOTDEV);
+    battery_load_persistent();
 
     first = 0;
     // ensure other cores see first=0.

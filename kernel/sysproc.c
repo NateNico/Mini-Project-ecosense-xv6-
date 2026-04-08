@@ -174,3 +174,11 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_waitpowerchange(void)
+{
+  int old_state;
+  argint(0, &old_state);
+  return battery_wait_power_change(old_state);
+}

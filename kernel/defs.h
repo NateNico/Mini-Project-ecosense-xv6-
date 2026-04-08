@@ -196,6 +196,8 @@ int             battery_set_charging(int);
 void            battery_record_exit(struct proc *);
 int             battery_get_status(uint64);
 int             battery_get_procs(uint64, int);
+void            battery_load_persistent(void);
+int             battery_wait_power_change(int);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

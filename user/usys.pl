@@ -48,3 +48,4 @@ entry("setcharging");
 entry("setbatterylevel");
 entry("setpowerclass");
 entry("getbatteryprocs");
+entry("waitpowerchange");

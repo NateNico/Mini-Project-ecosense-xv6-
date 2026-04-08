@@ -26,3 +26,4 @@
 #define SYS_setbatterylevel  25
 #define SYS_setpowerclass    26
 #define SYS_getbatteryprocs  27
+#define SYS_waitpowerchange  28
