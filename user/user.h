@@ -11,6 +11,7 @@ int setcharging(int on);
 int setbatterylevel(int percent);
 int setpowerclass(int class_id);
 int getbatteryprocs(struct battery_procinfo *buf, int max);
+int waitpowerchange(int current_state);
 
 // system calls
 int fork(void);

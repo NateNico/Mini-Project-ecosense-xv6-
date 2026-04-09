@@ -5,6 +5,9 @@
 #include "proc.h"
 #include "defs.h"
 #include "battery.h"
+#include "sleeplock.h"
+#include "fs.h"
+#include "file.h"
 
 #define BATTERY_TICK_WINDOW        25
 #define BATTERY_RETURN_MARGIN      15
@@ -269,8 +272,10 @@ battery_tick(void)
   }
   release(&battery_state.lock);
 
-  if(mode_changed)
+  if(mode_changed){
+    wakeup(&battery_state.power_state);
     announce_mode_change(power_state, battery_level);
+  }
   else if(exhausted_now && exhausted_changed)
     printf("[KERNEL]: BATTERY EXHAUSTED: emergency saver policy active.\n");
 }
@@ -483,11 +488,12 @@ battery_set_critical_threshold(int percent)
   battery_level = battery_state.battery_level;
   power_state   = battery_state.power_state;
   release(&battery_state.lock);
-  if(mode_changed)
+  if(mode_changed){
+    wakeup(&battery_state.power_state);
     announce_mode_change(power_state, battery_level);
+  }
   return 0;
 }
-
 int
 battery_set_level(int percent)
 {
@@ -503,8 +509,10 @@ battery_set_level(int percent)
   battery_level = battery_state.battery_level;
   power_state   = battery_state.power_state;
   release(&battery_state.lock);
-  if(mode_changed)
+  if(mode_changed){
+    wakeup(&battery_state.power_state);
     announce_mode_change(power_state, battery_level);
+  }
   return 0;
 }
 
@@ -596,4 +604,57 @@ battery_get_procs(uint64 addr, int max)
              count * sizeof(struct battery_procinfo)) < 0)
     return -1;
   return count;
+}
+
+int
+battery_wait_power_change(int old_state)
+{
+  int new_state;
+  acquire(&battery_state.lock);
+  while(battery_state.power_state == old_state){
+    if(killed(myproc())){
+      release(&battery_state.lock);
+      return -1;
+    }
+    sleep(&battery_state.power_state, &battery_state.lock);
+  }
+  new_state = battery_state.power_state;
+  release(&battery_state.lock);
+  return new_state;
+}
+
+void
+battery_load_persistent(void)
+{
+  struct inode *ip;
+  int threshold = -1;
+
+  begin_op();
+  ip = namei("/battery.conf");
+  if(ip != 0){
+    ilock(ip);
+    int n = readi(ip, 0, (uint64)&threshold, 0, sizeof(threshold));
+    iunlockput(ip);  // always unlock
+    if(n == sizeof(threshold) && threshold >= 5 && threshold <= 95){
+      int mode_changed;
+      int power_state;
+      int battery_level;
+
+      printf("[battery] loaded persistent threshold: %d%%\n", threshold);
+
+      acquire(&battery_state.lock);
+      battery_state.threshold = threshold;
+      mode_changed = refresh_mode_locked();
+      refresh_estimate_locked();
+      power_state = battery_state.power_state;
+      battery_level = battery_state.battery_level;
+      release(&battery_state.lock);
+
+      if(mode_changed){
+        wakeup(&battery_state.power_state);
+        announce_mode_change(power_state, battery_level);
+      }
+    }
+  }
+  end_op();
 }
