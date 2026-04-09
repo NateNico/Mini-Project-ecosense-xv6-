@@ -59,6 +59,7 @@ sys_setpowerclass(void)
   p = myproc();
   acquire(&p->lock);
   p->power_class = class_id;
+    p->power_class_locked = 1;
   release(&p->lock);
   return 0;
 }
@@ -152,6 +153,15 @@ sys_pause(void)
   release(&tickslock);
   return 0;
 }
+
+uint64
+sys_setcriticalthreshold(void)
+{
+  int percent;
+  argint(0, &percent);
+  return battery_set_critical_threshold(percent);
+}
+
 
 uint64
 sys_kill(void)

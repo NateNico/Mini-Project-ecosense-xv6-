@@ -48,4 +48,5 @@ entry("setcharging");
 entry("setbatterylevel");
 entry("setpowerclass");
 entry("getbatteryprocs");
+entry("setcriticalthreshold");
 entry("waitpowerchange");

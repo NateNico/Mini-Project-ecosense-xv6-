@@ -5,6 +5,7 @@ struct battery_status;
 struct battery_procinfo;
 
 int setpowerthreshold(int percent);
+int setcriticalthreshold(int percent); 
 int getpowerstatus(struct battery_status *status);
 int setcharging(int on);
 int setbatterylevel(int percent);

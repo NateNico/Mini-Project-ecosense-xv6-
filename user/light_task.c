@@ -27,15 +27,29 @@ main(void)
   int used;
   int elapsed;
   int start_ticks;
+  
+
+  if(getpowerstatus(&before) < 0){
+    printf("light_task: getpowerstatus failed\n");
+    exit(1);
+  }
+
+  
+
+   if(before.power_state == POWER_CRITICAL){
+    printf("light_task: task deferred: battery critical, charge first.\n");
+    exit(0);
+  }
+
+  
 
   if(setpowerclass(POWER_CLASS_BACKGROUND) < 0){
     printf("light_task: setpowerclass failed\n");
     exit(1);
   }
-  if(getpowerstatus(&before) < 0){
-    printf("light_task: getpowerstatus failed\n");
-    exit(1);
-  }
+  
+
+  
 
   start_ticks = uptime();
   run_chunks(30, 6000000);

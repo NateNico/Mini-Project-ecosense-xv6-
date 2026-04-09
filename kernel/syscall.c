@@ -108,6 +108,7 @@ extern uint64 sys_setbatterylevel(void);
 extern uint64 sys_setpowerclass(void);
 extern uint64 sys_getbatteryprocs(void);
 extern uint64 sys_waitpowerchange(void);
+extern uint64 sys_setcriticalthreshold(void);
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -139,6 +140,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_setbatterylevel]  sys_setbatterylevel,
 [SYS_setpowerclass]    sys_setpowerclass,
 [SYS_getbatteryprocs]  sys_getbatteryprocs,
+[SYS_setcriticalthreshold] sys_setcriticalthreshold,
 [SYS_waitpowerchange]  sys_waitpowerchange,
 };
 
