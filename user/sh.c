@@ -3,6 +3,7 @@
 #include "kernel/types.h"
 #include "user/user.h"
 #include "kernel/fcntl.h"
+#include "kernel/battery.h"
 
 // Parsed command representation
 #define EXEC  1
@@ -155,6 +156,8 @@ main(void)
       break;
     }
   }
+
+    setpowerclass(POWER_CLASS_INTERACTIVE);
 
   // Read and run input commands.
   while(getcmd(buf, sizeof(buf)) >= 0){

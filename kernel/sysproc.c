@@ -59,6 +59,7 @@ sys_setpowerclass(void)
   p = myproc();
   acquire(&p->lock);
   p->power_class = class_id;
+    p->power_class_locked = 1;
   release(&p->lock);
   return 0;
 }

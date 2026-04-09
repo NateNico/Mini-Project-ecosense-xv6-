@@ -111,6 +111,7 @@ struct proc {
   int energy_score;
   int consecutive_skips;
   int total_skips;
+  int power_class_locked;  // 1 if user explicitly set class, skip auto-refresh
 };
 
 extern struct proc proc[NPROC];

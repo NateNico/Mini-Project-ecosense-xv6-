@@ -62,6 +62,8 @@ battery_runtime_cost(struct proc *p, int saver)
 static void
 battery_refresh_power_class(struct proc *p)
 {
+  if(p->power_class_locked)
+    return;
   if(p->cpu_ticks >= 80 || p->energy_score >= 140 || p->throttle_count >= 10)
     p->power_class = POWER_CLASS_BACKGROUND;
   else if(p->cpu_ticks >= 25 || p->energy_score >= 45 || p->schedule_count >= 12)

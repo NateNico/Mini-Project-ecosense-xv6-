@@ -125,10 +125,11 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
-  p->power_class = POWER_CLASS_NORMAL;
+  p->power_class = POWER_CLASS_INTERACTIVE;
   p->schedule_count = 0;
   p->cpu_ticks = 0;
   p->throttle_count = 0;
+  
   p->energy_score = 0;
 
   // Allocate a trapframe page.
@@ -175,10 +176,11 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
-  p->power_class = POWER_CLASS_NORMAL;
+  p->power_class = POWER_CLASS_INTERACTIVE;
   p->schedule_count = 0;
   p->cpu_ticks = 0;
   p->throttle_count = 0;
+  p->power_class_locked = 0;
   p->energy_score = 0;
   p->consecutive_skips = 0;
   p->state = UNUSED;
